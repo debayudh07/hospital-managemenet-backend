@@ -52,14 +52,22 @@ export class PatientsService {
         firstName: createPatientDto.firstName,
         lastName: createPatientDto.lastName,
         email: createPatientDto.email,
-        phone: createPatientDto.phone || '',
-        dateOfBirth: createPatientDto.dateOfBirth ? new Date(createPatientDto.dateOfBirth) : new Date('1900-01-01'),
-        gender: Gender.OTHER, // Default, can be updated later
-        address: createPatientDto.address || '',
-        emergencyContact: createPatientDto.emergencyContactName || '',
+        phone: createPatientDto.phone,
+        dateOfBirth: new Date(createPatientDto.dateOfBirth),
+        gender: createPatientDto.gender,
+        address: createPatientDto.address,
+        city: createPatientDto.city,
+        state: createPatientDto.state,
+        zipCode: createPatientDto.zipCode,
+        emergencyContactName: createPatientDto.emergencyContactName,
+        emergencyContactPhone: createPatientDto.emergencyContactPhone,
+        emergencyContactRelationship: createPatientDto.emergencyContactRelationship,
+        bloodGroup: createPatientDto.bloodGroup,
         allergies: createPatientDto.allergies,
-        medicalHistory: createPatientDto.medicalHistory,
-        insurance: createPatientDto.insuranceProvider,
+        chronicConditions: createPatientDto.chronicConditions,
+        currentMedications: createPatientDto.currentMedications,
+        insuranceProvider: createPatientDto.insuranceProvider,
+        insurancePolicyNumber: createPatientDto.insurancePolicyNumber,
         userId: user.id,
         createdById: user.id, // For now, patient creates themselves
       },
@@ -80,13 +88,19 @@ export class PatientsService {
       dateOfBirth: patientData.dateOfBirth,
       avatar: patientData.user?.avatar,
       isActive: patientData.user?.isActive || patientData.isActive,
-      emergencyContactName: patientData.emergencyContact,
-      emergencyContactPhone: patientData.phone, // Using same phone for now
-      medicalHistory: patientData.medicalHistory,
-      currentMedications: '', // Not in schema, using empty string
+      emergencyContactName: patientData.emergencyContactName,
+      emergencyContactPhone: patientData.emergencyContactPhone,
+      emergencyContactRelationship: patientData.emergencyContactRelationship,
+      city: patientData.city,
+      state: patientData.state,
+      zipCode: patientData.zipCode,
+      gender: patientData.gender,
+      bloodGroup: patientData.bloodGroup,
+      chronicConditions: patientData.chronicConditions,
+      currentMedications: patientData.currentMedications,
       allergies: patientData.allergies,
-      insuranceProvider: patientData.insurance,
-      insurancePolicyNumber: '', // Not in schema, using empty string
+      insuranceProvider: patientData.insuranceProvider,
+      insurancePolicyNumber: patientData.insurancePolicyNumber,
       createdAt: patientData.createdAt,
       updatedAt: patientData.updatedAt,
     };
@@ -109,13 +123,19 @@ export class PatientsService {
       dateOfBirth: patient.dateOfBirth,
       avatar: patient.user?.avatar,
       isActive: patient.user?.isActive || patient.isActive,
-      emergencyContactName: patient.emergencyContact,
-      emergencyContactPhone: patient.phone,
-      medicalHistory: patient.medicalHistory,
-      currentMedications: '',
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactPhone: patient.emergencyContactPhone,
+      emergencyContactRelationship: patient.emergencyContactRelationship,
+      city: patient.city,
+      state: patient.state,
+      zipCode: patient.zipCode,
+      gender: patient.gender,
+      bloodGroup: patient.bloodGroup,
+      chronicConditions: patient.chronicConditions,
+      currentMedications: patient.currentMedications,
       allergies: patient.allergies,
-      insuranceProvider: patient.insurance,
-      insurancePolicyNumber: '',
+      insuranceProvider: patient.insuranceProvider,
+      insurancePolicyNumber: patient.insurancePolicyNumber,
       createdAt: patient.createdAt,
       updatedAt: patient.updatedAt,
     }));
@@ -150,13 +170,19 @@ export class PatientsService {
       dateOfBirth: patient.dateOfBirth,
       avatar: patient.user?.avatar,
       isActive: patient.user?.isActive || patient.isActive,
-      emergencyContactName: patient.emergencyContact,
-      emergencyContactPhone: patient.phone,
-      medicalHistory: patient.medicalHistory,
-      currentMedications: '',
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactPhone: patient.emergencyContactPhone,
+      emergencyContactRelationship: patient.emergencyContactRelationship,
+      city: patient.city,
+      state: patient.state,
+      zipCode: patient.zipCode,
+      gender: patient.gender,
+      bloodGroup: patient.bloodGroup,
+      chronicConditions: patient.chronicConditions,
+      currentMedications: patient.currentMedications,
       allergies: patient.allergies,
-      insuranceProvider: patient.insurance,
-      insurancePolicyNumber: '',
+      insuranceProvider: patient.insuranceProvider,
+      insurancePolicyNumber: patient.insurancePolicyNumber,
       createdAt: patient.createdAt,
       updatedAt: patient.updatedAt,
     };
@@ -212,14 +238,32 @@ export class PatientsService {
       patientUpdateData.address = updatePatientDto.address;
     if (updatePatientDto.dateOfBirth)
       patientUpdateData.dateOfBirth = new Date(updatePatientDto.dateOfBirth);
+    if (updatePatientDto.gender)
+      patientUpdateData.gender = updatePatientDto.gender;
+    if (updatePatientDto.city)
+      patientUpdateData.city = updatePatientDto.city;
+    if (updatePatientDto.state)
+      patientUpdateData.state = updatePatientDto.state;
+    if (updatePatientDto.zipCode)
+      patientUpdateData.zipCode = updatePatientDto.zipCode;
     if (updatePatientDto.emergencyContactName)
-      patientUpdateData.emergencyContact = updatePatientDto.emergencyContactName;
-    if (updatePatientDto.medicalHistory)
-      patientUpdateData.medicalHistory = updatePatientDto.medicalHistory;
+      patientUpdateData.emergencyContactName = updatePatientDto.emergencyContactName;
+    if (updatePatientDto.emergencyContactPhone)
+      patientUpdateData.emergencyContactPhone = updatePatientDto.emergencyContactPhone;
+    if (updatePatientDto.emergencyContactRelationship)
+      patientUpdateData.emergencyContactRelationship = updatePatientDto.emergencyContactRelationship;
+    if (updatePatientDto.bloodGroup)
+      patientUpdateData.bloodGroup = updatePatientDto.bloodGroup;
     if (updatePatientDto.allergies)
       patientUpdateData.allergies = updatePatientDto.allergies;
+    if (updatePatientDto.chronicConditions)
+      patientUpdateData.chronicConditions = updatePatientDto.chronicConditions;
+    if (updatePatientDto.currentMedications)
+      patientUpdateData.currentMedications = updatePatientDto.currentMedications;
     if (updatePatientDto.insuranceProvider)
-      patientUpdateData.insurance = updatePatientDto.insuranceProvider;
+      patientUpdateData.insuranceProvider = updatePatientDto.insuranceProvider;
+    if (updatePatientDto.insurancePolicyNumber)
+      patientUpdateData.insurancePolicyNumber = updatePatientDto.insurancePolicyNumber;
 
     // Update user and patient in transaction
     const updatedPatient = await this.prisma.$transaction(async (prisma) => {
@@ -252,26 +296,34 @@ export class PatientsService {
       throw new NotFoundException('Patient not found after update');
     }
 
+    const updatedData: any = updatedPatient;
     return {
-      id: updatedPatient.user?.id || updatedPatient.id,
-      email: updatedPatient.email || '',
-      firstName: updatedPatient.firstName,
-      lastName: updatedPatient.lastName,
-      role: updatedPatient.user?.role || UserRole.PATIENT,
-      phone: updatedPatient.phone,
-      address: updatedPatient.address,
-      dateOfBirth: updatedPatient.dateOfBirth,
-      avatar: updatedPatient.user?.avatar,
-      isActive: updatedPatient.user?.isActive || updatedPatient.isActive,
-      emergencyContactName: updatedPatient.emergencyContact,
-      emergencyContactPhone: updatedPatient.phone,
-      medicalHistory: updatedPatient.medicalHistory,
-      currentMedications: '',
-      allergies: updatedPatient.allergies,
-      insuranceProvider: updatedPatient.insurance,
-      insurancePolicyNumber: '',
-      createdAt: updatedPatient.createdAt,
-      updatedAt: updatedPatient.updatedAt,
+      id: updatedData.user?.id || updatedData.id,
+      email: updatedData.email || '',
+      firstName: updatedData.firstName,
+      lastName: updatedData.lastName,
+      role: updatedData.user?.role || UserRole.PATIENT,
+      phone: updatedData.phone,
+      address: updatedData.address,
+      dateOfBirth: updatedData.dateOfBirth,
+      avatar: updatedData.user?.avatar,
+      isActive: updatedData.user?.isActive || updatedData.isActive,
+      emergencyContactName: updatedData.emergencyContactName,
+      emergencyContactPhone: updatedData.emergencyContactPhone,
+      emergencyContactRelationship: updatedData.emergencyContactRelationship,
+      city: updatedData.city,
+      state: updatedData.state,
+      zipCode: updatedData.zipCode,
+      gender: updatedData.gender,
+      bloodGroup: updatedData.bloodGroup,
+      chronicConditions: updatedData.chronicConditions,
+      currentMedications: updatedData.currentMedications,
+      allergies: updatedData.allergies,
+      insuranceProvider: updatedData.insuranceProvider,
+      insurancePolicyNumber: updatedData.insurancePolicyNumber,
+      medicalHistory: updatedData.medicalHistory,
+      createdAt: updatedData.createdAt,
+      updatedAt: updatedData.updatedAt,
     };
   }
 

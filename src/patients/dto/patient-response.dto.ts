@@ -88,12 +88,60 @@ export class PatientResponseDto {
   emergencyContactPhone?: string | null;
 
   @ApiProperty({
-    description: 'Medical history',
-    example: 'No known allergies',
+    description: 'Emergency contact relationship',
+    example: 'Spouse',
     required: false,
     nullable: true,
   })
-  medicalHistory?: string | null;
+  emergencyContactRelationship?: string | null;
+
+  @ApiProperty({
+    description: 'Patient city',
+    example: 'New York',
+    required: false,
+    nullable: true,
+  })
+  city?: string | null;
+
+  @ApiProperty({
+    description: 'Patient state',
+    example: 'NY',
+    required: false,
+    nullable: true,
+  })
+  state?: string | null;
+
+  @ApiProperty({
+    description: 'Patient zip code',
+    example: '10001',
+    required: false,
+    nullable: true,
+  })
+  zipCode?: string | null;
+
+  @ApiProperty({
+    description: 'Patient gender',
+    example: 'MALE',
+    required: false,
+    nullable: true,
+  })
+  gender?: string | null;
+
+  @ApiProperty({
+    description: 'Blood group',
+    example: 'A+',
+    required: false,
+    nullable: true,
+  })
+  bloodGroup?: string | null;
+
+  @ApiProperty({
+    description: 'Chronic conditions',
+    example: 'Diabetes, Hypertension',
+    required: false,
+    nullable: true,
+  })
+  chronicConditions?: string | null;
 
   @ApiProperty({
     description: 'Current medications',
@@ -110,6 +158,14 @@ export class PatientResponseDto {
     nullable: true,
   })
   allergies?: string | null;
+
+  @ApiProperty({
+    description: 'Medical history',
+    example: 'Previous surgeries, medical conditions',
+    required: false,
+    nullable: true,
+  })
+  medicalHistory?: string | null;
 
   @ApiProperty({
     description: 'Insurance provider',

@@ -50,24 +50,31 @@ enum UserRole {
 
 // Patient Management Models
 model Patient {
-  id              String    @id @default(cuid())
-  patientId       String    @unique
-  firstName       String
-  lastName        String
-  email           String?
-  phone           String
-  dateOfBirth     DateTime
-  gender          Gender
-  address         String
-  emergencyContact String
-  bloodType       String?
-  allergies       String?
-  medicalHistory  String?
-  insurance       String?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdById     String
+  id                              String    @id @default(cuid())
+  patientId                       String    @unique
+  firstName                       String
+  lastName                        String
+  email                           String?
+  phone                           String
+  dateOfBirth                     DateTime
+  gender                          Gender
+  address                         String
+  city                            String    @default("")
+  state                           String    @default("")
+  zipCode                         String    @default("")
+  emergencyContactName            String    @default("")
+  emergencyContactPhone           String    @default("")
+  emergencyContactRelationship    String    @default("")
+  bloodGroup                      String?
+  allergies                       String?
+  chronicConditions               String?
+  currentMedications              String?
+  insuranceProvider               String?
+  insurancePolicyNumber           String?
+  isActive                        Boolean   @default(true)
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
+  createdById                     String
 
   // Relations
   createdBy       User            @relation("CreatedBy", fields: [createdById], references: [id])

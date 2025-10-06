@@ -85,7 +85,7 @@ export class AuthController {
     description: 'Unauthorized',
   })
   async getCurrentUser(@Request() req): Promise<UserResponseDto> {
-    return this.authService.getCurrentUser(req.user.sub);
+    return this.authService.getCurrentUser(req.user.id);
   }
 
   @Put('profile')
@@ -105,6 +105,6 @@ export class AuthController {
     @Request() req,
     @Body() updateData: Partial<RegisterDto>,
   ): Promise<UserResponseDto> {
-    return this.authService.updateProfile(req.user.sub, updateData);
+    return this.authService.updateProfile(req.user.id, updateData);
   }
 }

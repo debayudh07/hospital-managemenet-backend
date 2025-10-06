@@ -6,9 +6,8 @@ import {
   IsDateString,
   IsEnum,
   MinLength,
-  IsPhoneNumber,
 } from 'class-validator';
-import { UserRole } from '@prisma/client';
+import { Gender } from '@prisma/client';
 
 export class CreatePatientDto {
   @ApiProperty({
@@ -42,67 +41,84 @@ export class CreatePatientDto {
   lastName: string;
 
   @ApiProperty({
+    description: 'Patient date of birth',
+    example: '1990-01-01',
+  })
+  @IsDateString()
+  dateOfBirth: string;
+
+  @ApiProperty({
+    description: 'Patient gender',
+    enum: Gender,
+    example: 'MALE',
+  })
+  @IsEnum(Gender)
+  gender: Gender;
+
+  @ApiProperty({
     description: 'Patient phone number',
     example: '+1234567890',
-    required: false,
   })
-  @IsOptional()
   @IsString()
-  phone?: string;
+  phone: string;
 
   @ApiProperty({
     description: 'Patient address',
-    example: '123 Main St, City, State',
-    required: false,
+    example: '123 Main St',
   })
-  @IsOptional()
   @IsString()
-  address?: string;
+  address: string;
 
   @ApiProperty({
-    description: 'Patient date of birth',
-    example: '1990-01-01',
-    required: false,
+    description: 'Patient city',
+    example: 'New York',
   })
-  @IsOptional()
-  @IsDateString()
-  dateOfBirth?: string;
+  @IsString()
+  city: string;
+
+  @ApiProperty({
+    description: 'Patient state',
+    example: 'NY',
+  })
+  @IsString()
+  state: string;
+
+  @ApiProperty({
+    description: 'Patient zip code',
+    example: '10001',
+  })
+  @IsString()
+  zipCode: string;
 
   @ApiProperty({
     description: 'Emergency contact name',
     example: 'Jane Doe',
-    required: false,
   })
-  @IsOptional()
   @IsString()
-  emergencyContactName?: string;
+  emergencyContactName: string;
 
   @ApiProperty({
     description: 'Emergency contact phone',
     example: '+1234567891',
-    required: false,
   })
-  @IsOptional()
   @IsString()
-  emergencyContactPhone?: string;
+  emergencyContactPhone: string;
 
   @ApiProperty({
-    description: 'Medical history',
-    example: 'No known allergies',
-    required: false,
+    description: 'Emergency contact relationship',
+    example: 'Spouse',
   })
-  @IsOptional()
   @IsString()
-  medicalHistory?: string;
+  emergencyContactRelationship: string;
 
   @ApiProperty({
-    description: 'Current medications',
-    example: 'Aspirin 81mg daily',
+    description: 'Blood group',
+    example: 'A+',
     required: false,
   })
   @IsOptional()
   @IsString()
-  currentMedications?: string;
+  bloodGroup?: string;
 
   @ApiProperty({
     description: 'Known allergies',
@@ -112,6 +128,24 @@ export class CreatePatientDto {
   @IsOptional()
   @IsString()
   allergies?: string;
+
+  @ApiProperty({
+    description: 'Chronic conditions',
+    example: 'Diabetes, Hypertension',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  chronicConditions?: string;
+
+  @ApiProperty({
+    description: 'Current medications',
+    example: 'Aspirin 81mg daily',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  currentMedications?: string;
 
   @ApiProperty({
     description: 'Insurance provider',
