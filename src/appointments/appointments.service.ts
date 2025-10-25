@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -9,11 +14,14 @@ import { AppointmentStatus } from '@prisma/client';
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createAppointmentDto: CreateAppointmentDto, createdById: string): Promise<AppointmentResponseDto> {
+  async create(
+    createAppointmentDto: CreateAppointmentDto,
+    createdById: string,
+  ): Promise<AppointmentResponseDto> {
     // Check if patient exists
     const patient = await this.prisma.patient.findUnique({
       where: { id: createAppointmentDto.patientId },
-      include: { user: true }
+      include: { user: true },
     });
     if (!patient) {
       throw new NotFoundException('Patient not found');
@@ -22,7 +30,7 @@ export class AppointmentsService {
     // Check if doctor exists
     const doctor = await this.prisma.doctor.findUnique({
       where: { id: createAppointmentDto.doctorId },
-      include: { user: true }
+      include: { user: true },
     });
     if (!doctor) {
       throw new NotFoundException('Doctor not found');
@@ -41,13 +49,15 @@ export class AppointmentsService {
         date: appointmentDate,
         startTime: createAppointmentDto.startTime,
         status: {
-          not: AppointmentStatus.CANCELLED
-        }
-      }
+          not: AppointmentStatus.CANCELLED,
+        },
+      },
     });
 
     if (conflictingAppointment) {
-      throw new ConflictException('Doctor already has an appointment at this time');
+      throw new ConflictException(
+        'Doctor already has an appointment at this time',
+      );
     }
 
     const appointment = await this.prisma.appointment.create({
@@ -58,18 +68,29 @@ export class AppointmentsService {
       },
       include: {
         patient: {
-          include: { user: true }
+          include: { user: true },
         },
         doctor: {
-          include: { user: true }
-        }
-      }
+          include: { user: true },
+        },
+      },
     });
 
     return this.mapToResponseDto(appointment);
   }
 
-  async findAll(page: number = 1, limit: number = 10, status?: AppointmentStatus, doctorId?: string, patientId?: string): Promise<{ appointments: AppointmentResponseDto[], total: number, page: number, limit: number }> {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    status?: AppointmentStatus,
+    doctorId?: string,
+    patientId?: string,
+  ): Promise<{
+    appointments: AppointmentResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const skip = (page - 1) * limit;
     const where: any = {};
 
@@ -91,21 +112,23 @@ export class AppointmentsService {
         orderBy: { date: 'asc' },
         include: {
           patient: {
-            include: { user: true }
+            include: { user: true },
           },
           doctor: {
-            include: { user: true }
-          }
-        }
+            include: { user: true },
+          },
+        },
       }),
-      this.prisma.appointment.count({ where })
+      this.prisma.appointment.count({ where }),
     ]);
 
     return {
-      appointments: appointments.map((appointment: any) => this.mapToResponseDto(appointment)),
+      appointments: appointments.map((appointment: any) =>
+        this.mapToResponseDto(appointment),
+      ),
       total,
       page,
-      limit
+      limit,
     };
   }
 
@@ -114,12 +137,12 @@ export class AppointmentsService {
       where: { id },
       include: {
         patient: {
-          include: { user: true }
+          include: { user: true },
         },
         doctor: {
-          include: { user: true }
-        }
-      }
+          include: { user: true },
+        },
+      },
     });
 
     if (!appointment) {
@@ -129,9 +152,12 @@ export class AppointmentsService {
     return this.mapToResponseDto(appointment);
   }
 
-  async update(id: string, updateAppointmentDto: UpdateAppointmentDto): Promise<AppointmentResponseDto> {
+  async update(
+    id: string,
+    updateAppointmentDto: UpdateAppointmentDto,
+  ): Promise<AppointmentResponseDto> {
     const existingAppointment = await this.prisma.appointment.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!existingAppointment) {
@@ -139,10 +165,18 @@ export class AppointmentsService {
     }
 
     // If updating date/time, check for conflicts
-    if (updateAppointmentDto.date || updateAppointmentDto.startTime || updateAppointmentDto.doctorId) {
-      const appointmentDate = updateAppointmentDto.date ? new Date(updateAppointmentDto.date) : existingAppointment.date;
-      const startTime = updateAppointmentDto.startTime || existingAppointment.startTime;
-      const doctorId = updateAppointmentDto.doctorId || existingAppointment.doctorId;
+    if (
+      updateAppointmentDto.date ||
+      updateAppointmentDto.startTime ||
+      updateAppointmentDto.doctorId
+    ) {
+      const appointmentDate = updateAppointmentDto.date
+        ? new Date(updateAppointmentDto.date)
+        : existingAppointment.date;
+      const startTime =
+        updateAppointmentDto.startTime || existingAppointment.startTime;
+      const doctorId =
+        updateAppointmentDto.doctorId || existingAppointment.doctorId;
 
       const conflictingAppointment = await this.prisma.appointment.findFirst({
         where: {
@@ -151,13 +185,15 @@ export class AppointmentsService {
           date: appointmentDate,
           startTime,
           status: {
-            not: AppointmentStatus.CANCELLED
-          }
-        }
+            not: AppointmentStatus.CANCELLED,
+          },
+        },
       });
 
       if (conflictingAppointment) {
-        throw new ConflictException('Doctor already has an appointment at this time');
+        throw new ConflictException(
+          'Doctor already has an appointment at this time',
+        );
       }
     }
 
@@ -171,12 +207,12 @@ export class AppointmentsService {
       data: updateData,
       include: {
         patient: {
-          include: { user: true }
+          include: { user: true },
         },
         doctor: {
-          include: { user: true }
-        }
-      }
+          include: { user: true },
+        },
+      },
     });
 
     return this.mapToResponseDto(appointment);
@@ -184,7 +220,7 @@ export class AppointmentsService {
 
   async remove(id: string): Promise<void> {
     const appointment = await this.prisma.appointment.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!appointment) {
@@ -192,13 +228,16 @@ export class AppointmentsService {
     }
 
     await this.prisma.appointment.delete({
-      where: { id }
+      where: { id },
     });
   }
 
-  async findByDoctor(doctorId: string, date?: string): Promise<AppointmentResponseDto[]> {
+  async findByDoctor(
+    doctorId: string,
+    date?: string,
+  ): Promise<AppointmentResponseDto[]> {
     const where: any = { doctorId };
-    
+
     if (date) {
       const appointmentDate = new Date(date);
       where.date = appointmentDate;
@@ -209,15 +248,17 @@ export class AppointmentsService {
       orderBy: { startTime: 'asc' },
       include: {
         patient: {
-          include: { user: true }
+          include: { user: true },
         },
         doctor: {
-          include: { user: true }
-        }
-      }
+          include: { user: true },
+        },
+      },
     });
 
-    return appointments.map((appointment: any) => this.mapToResponseDto(appointment));
+    return appointments.map((appointment: any) =>
+      this.mapToResponseDto(appointment),
+    );
   }
 
   async findByPatient(patientId: string): Promise<AppointmentResponseDto[]> {
@@ -226,15 +267,17 @@ export class AppointmentsService {
       orderBy: { date: 'desc' },
       include: {
         patient: {
-          include: { user: true }
+          include: { user: true },
         },
         doctor: {
-          include: { user: true }
-        }
-      }
+          include: { user: true },
+        },
+      },
     });
 
-    return appointments.map((appointment: any) => this.mapToResponseDto(appointment));
+    return appointments.map((appointment: any) =>
+      this.mapToResponseDto(appointment),
+    );
   }
 
   private mapToResponseDto(appointmentData: any): AppointmentResponseDto {
@@ -252,14 +295,18 @@ export class AppointmentsService {
       createdById: appointmentData.createdById,
       createdAt: appointmentData.createdAt,
       updatedAt: appointmentData.updatedAt,
-      patientName: appointmentData.patient?.user?.firstName && appointmentData.patient?.user?.lastName 
-        ? `${appointmentData.patient.user.firstName} ${appointmentData.patient.user.lastName}` 
-        : undefined,
+      patientName:
+        appointmentData.patient?.user?.firstName &&
+        appointmentData.patient?.user?.lastName
+          ? `${appointmentData.patient.user.firstName} ${appointmentData.patient.user.lastName}`
+          : undefined,
       patientEmail: appointmentData.patient?.user?.email,
       patientPhone: appointmentData.patient?.phoneNumber,
-      doctorName: appointmentData.doctor?.user?.firstName && appointmentData.doctor?.user?.lastName 
-        ? `${appointmentData.doctor.user.firstName} ${appointmentData.doctor.user.lastName}` 
-        : undefined,
+      doctorName:
+        appointmentData.doctor?.user?.firstName &&
+        appointmentData.doctor?.user?.lastName
+          ? `${appointmentData.doctor.user.firstName} ${appointmentData.doctor.user.lastName}`
+          : undefined,
       doctorSpecialization: appointmentData.doctor?.specialization,
       consultationFee: appointmentData.doctor?.consultationFee,
     };

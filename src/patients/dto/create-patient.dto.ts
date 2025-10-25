@@ -18,13 +18,15 @@ export class CreatePatientDto {
   email: string;
 
   @ApiProperty({
-    description: 'Patient password',
+    description: 'Patient password (optional)',
     example: 'securePassword123',
     minLength: 6,
+    required: false,
   })
+  @IsOptional()
   @IsString()
   @MinLength(6)
-  password: string;
+  password?: string;
 
   @ApiProperty({
     description: 'Patient first name',

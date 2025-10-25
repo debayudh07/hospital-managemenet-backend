@@ -9,7 +9,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -85,7 +90,24 @@ export class AuthController {
     description: 'Unauthorized',
   })
   async getCurrentUser(@Request() req): Promise<UserResponseDto> {
-    return this.authService.getCurrentUser(req.user.id);
+    // The user is already validated by JWT strategy and attached to req.user
+    // No need for additional database lookup
+    return req.user;
+  }
+
+  @Post('validate-token')
+  @ApiOperation({ summary: 'Validate token and get user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'Token is valid and user profile returned',
+    type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired token',
+  })
+  async validateToken(@Body() body: { token: string }): Promise<UserResponseDto> {
+    return this.authService.validateToken(body.token);
   }
 
   @Put('profile')

@@ -5,10 +5,10 @@ import { CreateAppointmentDto } from './create-appointment.dto';
 import { AppointmentStatus } from '@prisma/client';
 
 export class UpdateAppointmentDto extends PartialType(CreateAppointmentDto) {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Appointment status',
     enum: AppointmentStatus,
-    example: AppointmentStatus.CONFIRMED
+    example: AppointmentStatus.CONFIRMED,
   })
   @IsEnum(AppointmentStatus)
   @IsOptional()

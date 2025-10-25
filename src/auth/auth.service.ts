@@ -40,7 +40,9 @@ export class AuthService {
         email,
         password: hashedPassword,
         ...userData,
-        dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth) : null,
+        dateOfBirth: userData.dateOfBirth
+          ? new Date(userData.dateOfBirth)
+          : null,
       },
     });
 
@@ -122,6 +124,49 @@ export class AuthService {
     return this.excludePassword(user);
   }
 
+  async validateToken(token: string): Promise<UserResponseDto> {
+    try {
+      // Verify the token
+      const payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET || 'your-secret-key',
+      });
+
+      // Get user from database
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          phone: true,
+          address: true,
+          dateOfBirth: true,
+          isActive: true,
+          avatar: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      if (!user.isActive) {
+        throw new UnauthorizedException('Account is deactivated');
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
+
   async updateProfile(
     userId: string,
     updateData: Partial<RegisterDto>,
@@ -154,7 +199,7 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_SECRET || 'secret',
+        secret: process.env.JWT_SECRET || 'your-secret-key',
         expiresIn: '1h',
       }),
       this.jwtService.signAsync(payload, {
