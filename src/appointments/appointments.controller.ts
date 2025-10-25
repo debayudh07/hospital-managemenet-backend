@@ -12,7 +12,13 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -32,7 +38,11 @@ export class AppointmentsController {
   @Post()
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST')
   @ApiOperation({ summary: 'Create a new appointment' })
-  @ApiResponse({ status: 201, description: 'Appointment created successfully', type: AppointmentResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Appointment created successfully',
+    type: AppointmentResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 404, description: 'Patient or doctor not found' })
   @ApiResponse({ status: 409, description: 'Appointment conflict' })
@@ -46,12 +56,40 @@ export class AppointmentsController {
   @Get()
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST')
   @ApiOperation({ summary: 'Get all appointments with pagination and filters' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page' })
-  @ApiQuery({ name: 'status', required: false, enum: AppointmentStatus, description: 'Filter by status' })
-  @ApiQuery({ name: 'doctorId', required: false, type: String, description: 'Filter by doctor ID' })
-  @ApiQuery({ name: 'patientId', required: false, type: String, description: 'Filter by patient ID' })
-  @ApiResponse({ status: 200, description: 'Appointments retrieved successfully' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: AppointmentStatus,
+    description: 'Filter by status',
+  })
+  @ApiQuery({
+    name: 'doctorId',
+    required: false,
+    type: String,
+    description: 'Filter by doctor ID',
+  })
+  @ApiQuery({
+    name: 'patientId',
+    required: false,
+    type: String,
+    description: 'Filter by patient ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Appointments retrieved successfully',
+  })
   async findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
@@ -59,14 +97,29 @@ export class AppointmentsController {
     @Query('doctorId') doctorId?: string,
     @Query('patientId') patientId?: string,
   ) {
-    return this.appointmentsService.findAll(page, limit, status, doctorId, patientId);
+    return this.appointmentsService.findAll(
+      page,
+      limit,
+      status,
+      doctorId,
+      patientId,
+    );
   }
 
   @Get('doctor/:doctorId')
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST')
   @ApiOperation({ summary: 'Get appointments by doctor ID' })
-  @ApiQuery({ name: 'date', required: false, type: String, description: 'Filter by specific date (YYYY-MM-DD)' })
-  @ApiResponse({ status: 200, description: 'Doctor appointments retrieved successfully', type: [AppointmentResponseDto] })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    type: String,
+    description: 'Filter by specific date (YYYY-MM-DD)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Doctor appointments retrieved successfully',
+    type: [AppointmentResponseDto],
+  })
   async findByDoctor(
     @Param('doctorId') doctorId: string,
     @Query('date') date?: string,
@@ -77,7 +130,11 @@ export class AppointmentsController {
   @Get('patient/:patientId')
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT')
   @ApiOperation({ summary: 'Get appointments by patient ID' })
-  @ApiResponse({ status: 200, description: 'Patient appointments retrieved successfully', type: [AppointmentResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'Patient appointments retrieved successfully',
+    type: [AppointmentResponseDto],
+  })
   async findByPatient(
     @Param('patientId') patientId: string,
   ): Promise<AppointmentResponseDto[]> {
@@ -87,7 +144,11 @@ export class AppointmentsController {
   @Get(':id')
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT')
   @ApiOperation({ summary: 'Get appointment by ID' })
-  @ApiResponse({ status: 200, description: 'Appointment retrieved successfully', type: AppointmentResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Appointment retrieved successfully',
+    type: AppointmentResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Appointment not found' })
   async findOne(@Param('id') id: string): Promise<AppointmentResponseDto> {
     return this.appointmentsService.findOne(id);
@@ -96,7 +157,11 @@ export class AppointmentsController {
   @Patch(':id')
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST')
   @ApiOperation({ summary: 'Update appointment' })
-  @ApiResponse({ status: 200, description: 'Appointment updated successfully', type: AppointmentResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Appointment updated successfully',
+    type: AppointmentResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Appointment not found' })
   @ApiResponse({ status: 409, description: 'Appointment conflict' })
   async update(
@@ -119,7 +184,11 @@ export class AppointmentsController {
   @Patch(':id/status')
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST')
   @ApiOperation({ summary: 'Update appointment status' })
-  @ApiResponse({ status: 200, description: 'Appointment status updated successfully', type: AppointmentResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Appointment status updated successfully',
+    type: AppointmentResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Appointment not found' })
   async updateStatus(
     @Param('id') id: string,

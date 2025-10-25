@@ -1,15 +1,15 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType } from '@nestjs/mapped-types';
 import { CreatePatientDto } from './create-patient.dto';
+import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
 
 export class UpdatePatientDto extends PartialType(CreatePatientDto) {
   @ApiProperty({
-    description: 'Patient ID',
-    example: 'clxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    description: 'New password for the patient (optional)',
+    example: 'newSecurePassword123',
     required: false,
   })
   @IsOptional()
   @IsString()
-  id?: string;
+  password?: string;
 }

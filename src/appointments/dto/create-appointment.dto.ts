@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsDateString, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum AppointmentType {
@@ -19,7 +25,10 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   doctorId: string;
 
-  @ApiProperty({ description: 'Appointment date', example: '2024-01-15T10:00:00Z' })
+  @ApiProperty({
+    description: 'Appointment date',
+    example: '2024-01-15T10:00:00Z',
+  })
   @IsDateString()
   @IsNotEmpty()
   date: string;
@@ -34,10 +43,10 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   endTime: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Appointment type',
     enum: AppointmentType,
-    example: AppointmentType.CONSULTATION
+    example: AppointmentType.CONSULTATION,
   })
   @IsEnum(AppointmentType)
   @IsNotEmpty()

@@ -15,7 +15,9 @@ import * as bcrypt from 'bcryptjs';
 export class PatientsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createPatientDto: CreatePatientDto): Promise<PatientResponseDto> {
+  async create(
+    createPatientDto: CreatePatientDto,
+  ): Promise<PatientResponseDto> {
     // Check if patient with email already exists
     const existingPatient = await this.prisma.patient.findFirst({
       where: { email: createPatientDto.email },
@@ -28,22 +30,25 @@ export class PatientsService {
     // Generate unique patient ID
     const patientId = `PAT${Date.now()}`;
 
-    // Create user account for patient login
-    const hashedPassword = await bcrypt.hash(createPatientDto.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email: createPatientDto.email,
-        password: hashedPassword,
-        firstName: createPatientDto.firstName,
-        lastName: createPatientDto.lastName,
-        role: UserRole.PATIENT,
-        phone: createPatientDto.phone,
-        address: createPatientDto.address,
-        dateOfBirth: createPatientDto.dateOfBirth
-          ? new Date(createPatientDto.dateOfBirth)
-          : null,
-      },
-    });
+    // Create user account for patient login (only if password is provided)
+    let user: any = null;
+    if (createPatientDto.password) {
+      const hashedPassword = await bcrypt.hash(createPatientDto.password, 10);
+      user = await this.prisma.user.create({
+        data: {
+          email: createPatientDto.email,
+          password: hashedPassword,
+          firstName: createPatientDto.firstName,
+          lastName: createPatientDto.lastName,
+          role: UserRole.PATIENT,
+          phone: createPatientDto.phone,
+          address: createPatientDto.address,
+          dateOfBirth: createPatientDto.dateOfBirth
+            ? new Date(createPatientDto.dateOfBirth)
+            : null,
+        },
+      });
+    }
 
     // Create patient record
     const patient = await this.prisma.patient.create({
@@ -61,15 +66,16 @@ export class PatientsService {
         zipCode: createPatientDto.zipCode,
         emergencyContactName: createPatientDto.emergencyContactName,
         emergencyContactPhone: createPatientDto.emergencyContactPhone,
-        emergencyContactRelationship: createPatientDto.emergencyContactRelationship,
+        emergencyContactRelationship:
+          createPatientDto.emergencyContactRelationship,
         bloodGroup: createPatientDto.bloodGroup,
         allergies: createPatientDto.allergies,
         chronicConditions: createPatientDto.chronicConditions,
         currentMedications: createPatientDto.currentMedications,
         insuranceProvider: createPatientDto.insuranceProvider,
         insurancePolicyNumber: createPatientDto.insurancePolicyNumber,
-        userId: user.id,
-        createdById: user.id, // For now, patient creates themselves
+        userId: user ? user.id : null,
+        createdById: user?.id || 'system', // Use system if no user created
       },
       include: {
         user: true,
@@ -143,12 +149,8 @@ export class PatientsService {
 
   async findOne(id: string): Promise<PatientResponseDto> {
     const patient = await this.prisma.patient.findFirst({
-      where: { 
-        OR: [
-          { id: id },
-          { userId: id },
-          { patientId: id }
-        ]
+      where: {
+        OR: [{ id: id }, { userId: id }, { patientId: id }],
       },
       include: {
         user: true,
@@ -194,12 +196,8 @@ export class PatientsService {
   ): Promise<PatientResponseDto> {
     // Check if patient exists
     const existingPatient = await this.prisma.patient.findFirst({
-      where: { 
-        OR: [
-          { id: id },
-          { userId: id },
-          { patientId: id }
-        ]
+      where: {
+        OR: [{ id: id }, { userId: id }, { patientId: id }],
       },
       include: { user: true },
     });
@@ -220,8 +218,11 @@ export class PatientsService {
       userUpdateData.address = updatePatientDto.address;
     if (updatePatientDto.dateOfBirth)
       userUpdateData.dateOfBirth = new Date(updatePatientDto.dateOfBirth);
-    if (updatePatientDto.password) {
-      userUpdateData.password = await bcrypt.hash(updatePatientDto.password, 10);
+    if (updatePatientDto.password && updatePatientDto.password.trim() !== '') {
+      userUpdateData.password = await bcrypt.hash(
+        updatePatientDto.password,
+        10,
+      );
     }
 
     // Prepare patient update data
@@ -240,18 +241,20 @@ export class PatientsService {
       patientUpdateData.dateOfBirth = new Date(updatePatientDto.dateOfBirth);
     if (updatePatientDto.gender)
       patientUpdateData.gender = updatePatientDto.gender;
-    if (updatePatientDto.city)
-      patientUpdateData.city = updatePatientDto.city;
+    if (updatePatientDto.city) patientUpdateData.city = updatePatientDto.city;
     if (updatePatientDto.state)
       patientUpdateData.state = updatePatientDto.state;
     if (updatePatientDto.zipCode)
       patientUpdateData.zipCode = updatePatientDto.zipCode;
     if (updatePatientDto.emergencyContactName)
-      patientUpdateData.emergencyContactName = updatePatientDto.emergencyContactName;
+      patientUpdateData.emergencyContactName =
+        updatePatientDto.emergencyContactName;
     if (updatePatientDto.emergencyContactPhone)
-      patientUpdateData.emergencyContactPhone = updatePatientDto.emergencyContactPhone;
+      patientUpdateData.emergencyContactPhone =
+        updatePatientDto.emergencyContactPhone;
     if (updatePatientDto.emergencyContactRelationship)
-      patientUpdateData.emergencyContactRelationship = updatePatientDto.emergencyContactRelationship;
+      patientUpdateData.emergencyContactRelationship =
+        updatePatientDto.emergencyContactRelationship;
     if (updatePatientDto.bloodGroup)
       patientUpdateData.bloodGroup = updatePatientDto.bloodGroup;
     if (updatePatientDto.allergies)
@@ -259,11 +262,13 @@ export class PatientsService {
     if (updatePatientDto.chronicConditions)
       patientUpdateData.chronicConditions = updatePatientDto.chronicConditions;
     if (updatePatientDto.currentMedications)
-      patientUpdateData.currentMedications = updatePatientDto.currentMedications;
+      patientUpdateData.currentMedications =
+        updatePatientDto.currentMedications;
     if (updatePatientDto.insuranceProvider)
       patientUpdateData.insuranceProvider = updatePatientDto.insuranceProvider;
     if (updatePatientDto.insurancePolicyNumber)
-      patientUpdateData.insurancePolicyNumber = updatePatientDto.insurancePolicyNumber;
+      patientUpdateData.insurancePolicyNumber =
+        updatePatientDto.insurancePolicyNumber;
 
     // Update user and patient in transaction
     const updatedPatient = await this.prisma.$transaction(async (prisma) => {
@@ -330,12 +335,8 @@ export class PatientsService {
   async remove(id: string): Promise<{ message: string }> {
     // Check if patient exists
     const existingPatient = await this.prisma.patient.findFirst({
-      where: { 
-        OR: [
-          { id: id },
-          { userId: id },
-          { patientId: id }
-        ]
+      where: {
+        OR: [{ id: id }, { userId: id }, { patientId: id }],
       },
       include: { user: true },
     });
@@ -364,12 +365,8 @@ export class PatientsService {
 
   async deactivate(id: string): Promise<PatientResponseDto> {
     const patient = await this.prisma.patient.findFirst({
-      where: { 
-        OR: [
-          { id: id },
-          { userId: id },
-          { patientId: id }
-        ]
+      where: {
+        OR: [{ id: id }, { userId: id }, { patientId: id }],
       },
       include: { user: true },
     });
@@ -397,12 +394,8 @@ export class PatientsService {
 
   async activate(id: string): Promise<PatientResponseDto> {
     const patient = await this.prisma.patient.findFirst({
-      where: { 
-        OR: [
-          { id: id },
-          { userId: id },
-          { patientId: id }
-        ]
+      where: {
+        OR: [{ id: id }, { userId: id }, { patientId: id }],
       },
       include: { user: true },
     });
