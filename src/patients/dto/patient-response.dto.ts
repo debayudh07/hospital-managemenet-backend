@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 
 export class PatientResponseDto {
   @ApiProperty({
@@ -7,6 +6,12 @@ export class PatientResponseDto {
     example: 'clxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
   })
   id: string;
+
+  @ApiProperty({
+    description: 'Patient unique ID',
+    example: 'PAT1234567890',
+  })
+  patientId: string;
 
   @ApiProperty({
     description: 'Patient email address',
@@ -25,13 +30,6 @@ export class PatientResponseDto {
     example: 'Doe',
   })
   lastName: string;
-
-  @ApiProperty({
-    description: 'User role',
-    enum: UserRole,
-    example: UserRole.PATIENT,
-  })
-  role: UserRole;
 
   @ApiProperty({
     description: 'Patient phone number',
@@ -182,6 +180,14 @@ export class PatientResponseDto {
     nullable: true,
   })
   insurancePolicyNumber?: string | null;
+
+  @ApiProperty({
+    description: 'Additional notes',
+    example: 'Patient preferences and special requirements',
+    required: false,
+    nullable: true,
+  })
+  notes?: string | null;
 
   @ApiProperty({
     description: 'Account creation date',
