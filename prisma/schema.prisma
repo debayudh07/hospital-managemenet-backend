@@ -71,6 +71,14 @@ model Patient {
   currentMedications           String?
   insuranceProvider            String?
   insurancePolicyNumber        String?
+  
+  // Additional OPD registration fields
+  guardianName                 String?
+  guardianRelation             String?
+  occupation                   String?
+  idProofType                  String?
+  idProofNumber                String?
+  patientType                  PatientType @default(NEW)
   isActive                     Boolean  @default(true)
   avatar                       String?
   notes                        String?
@@ -88,6 +96,10 @@ model Patient {
   labOrders      LabOrder[]
   invoices       Invoice[]
   vitalSigns     VitalSigns[]
+  
+  // OPD & IPD Relations
+  opdVisits      OPDVisit[]
+  admissions     Admission[]
 
   @@map("patients")
 }
@@ -96,6 +108,11 @@ enum Gender {
   MALE
   FEMALE
   OTHER
+}
+
+enum PatientType {
+  NEW
+  RETURNING
 }
 
 model MedicalRecord {
@@ -154,6 +171,7 @@ model Doctor {
   address         String?
   isAvailable     Boolean   @default(true)
   isActive        Boolean   @default(true)
+  opdIpdAvailability String @default("both") // "opd", "ipd", "both"
   avatar          String?
   workingHours    String // JSON string for working hours
   notes           String?
@@ -183,6 +201,13 @@ model Doctor {
   schedules      Schedule[]
   primaryDepartment Department?     @relation("PrimaryDepartment", fields: [departmentId], references: [id])
   headOfDepartments Department[]    @relation("DepartmentHead")
+  
+  // OPD & IPD Relations
+  opdVisits      OPDVisit[]
+  opdPrescriptions OPDPrescription[]
+  admissions     Admission[]
+  treatments     Treatment[]
+  discharges     Discharge[]
 
   @@map("doctors")
 }
@@ -336,6 +361,7 @@ enum PaymentMethod {
   BANK_TRANSFER
   INSURANCE
   ONLINE
+  TPA  // Third Party Administrator
 }
 
 enum PaymentStatus {
@@ -525,6 +551,10 @@ model Department {
   headDoctor Doctor?             @relation("DepartmentHead", fields: [headDoctorId], references: [id])
   doctors    DoctorDepartment[]
   primaryDoctors Doctor[]        @relation("PrimaryDepartment")
+  
+  // OPD & IPD Relations
+  opdVisits  OPDVisit[]
+  wards      Ward[]
 
   @@map("departments")
 }
@@ -588,4 +618,470 @@ model AuditLog {
   user User @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+// ========================================
+// OPD (Outpatient Department) Models
+// ========================================
+
+model OPDVisit {
+  id                    String              @id @default(cuid())
+  visitId               String              @unique
+  patientId             String
+  doctorId              String
+  departmentId          String
+  visitDate             DateTime            @default(now())
+  visitTime             String
+  visitType             VisitType           @default(OPD)
+  appointmentMode       AppointmentMode     @default(WALK_IN)
+  referralSource        ReferralSource      @default(SELF)
+  referredBy            String?
+  priority              VisitPriority       @default(NORMAL)
+  status                VisitStatus         @default(PENDING)
+  
+  // Chief complaint and assessment
+  chiefComplaint        String
+  historyOfPresentIllness String?
+  pastMedicalHistory    String?
+  familyHistory         String?
+  socialHistory         String?
+  
+  // Clinical examination
+  generalExamination    String?
+  systemicExamination   String?
+  
+  // Diagnosis and plan
+  provisionalDiagnosis  String?
+  finalDiagnosis        String?
+  treatmentPlan         String?
+  followUpDate          DateTime?
+  followUpInstructions  String?
+  
+  // Investigation recommendations
+  investigationRecommendations String?
+  
+  // Additional fields
+  symptoms              String?
+  notes                 String?
+  isFollowUp            Boolean             @default(false)
+  parentVisitId         String?
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  // Relations
+  patient               Patient             @relation(fields: [patientId], references: [id])
+  doctor                Doctor              @relation(fields: [doctorId], references: [id])
+  department            Department          @relation(fields: [departmentId], references: [id])
+  parentVisit           OPDVisit?           @relation("FollowUpVisits", fields: [parentVisitId], references: [id])
+  followUpVisits        OPDVisit[]          @relation("FollowUpVisits")
+  
+  // Child relations
+  vitals                OPDVitals[]
+  prescriptions         OPDPrescription[]
+  investigations        OPDInvestigation[]
+  billing               OPDBilling?
+
+  @@map("opd_visits")
+}
+
+model OPDVitals {
+  id              String   @id @default(cuid())
+  opdVisitId      String
+  bloodPressure   String?
+  heartRate       Int?
+  temperature     Float?
+  respiratoryRate Int?
+  oxygenSaturation Int?
+  weight          Float?
+  height          Float?
+  bmi             Float?
+  recordedAt      DateTime @default(now())
+  recordedBy      String
+  notes           String?
+  
+  // Relations
+  opdVisit        OPDVisit @relation(fields: [opdVisitId], references: [id], onDelete: Cascade)
+
+  @@map("opd_vitals")
+}
+
+model OPDPrescription {
+  id           String            @id @default(cuid())
+  opdVisitId   String
+  doctorId     String
+  drugName     String            // Changed from medicineName to match frontend
+  strength     String?           // Added strength field
+  dosage       String            // This becomes dose in frontend
+  frequency    String
+  duration     String
+  quantity     Int?
+  route        MedicineRoute     @default(ORAL)
+  instructions String?
+  notes        String?           // Added notes field
+  isGeneric    Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  
+  // Relations
+  opdVisit     OPDVisit          @relation(fields: [opdVisitId], references: [id], onDelete: Cascade)
+  doctor       Doctor            @relation(fields: [doctorId], references: [id])
+
+  @@map("opd_prescriptions")
+}
+
+model OPDBilling {
+  id                        String        @id @default(cuid())
+  opdVisitId                String        @unique
+  consultationFee           Float
+  additionalCharges         Float         @default(0)
+  discount                  Float         @default(0)
+  tax                       Float         @default(0)
+  totalAmount               Float
+  paymentStatus             PaymentStatus @default(PENDING)
+  paymentMethod             PaymentMethod?
+  paidAmount                Float         @default(0)
+  balanceAmount             Float         @default(0)
+  transactionId             String?
+  paymentDate               DateTime?
+  notes                     String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  
+  // Relations
+  opdVisit                  OPDVisit      @relation(fields: [opdVisitId], references: [id], onDelete: Cascade)
+
+  @@map("opd_billing")
+}
+
+model OPDInvestigation {
+  id              String                @id @default(cuid())
+  opdVisitId      String
+  testName        String
+  testType        InvestigationType     @default(LAB)
+  urgency         InvestigationUrgency  @default(ROUTINE)
+  instructions    String?
+  orderedBy       String
+  status          InvestigationStatus   @default(ORDERED)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  
+  // Relations
+  opdVisit        OPDVisit              @relation(fields: [opdVisitId], references: [id], onDelete: Cascade)
+
+  @@map("opd_investigations")
+}
+
+// ========================================
+// IPD (Inpatient Department) Models
+// ========================================
+
+model Ward {
+  id            String   @id @default(cuid())
+  wardNumber    String   @unique
+  name          String
+  type          WardType
+  departmentId  String
+  totalBeds     Int
+  availableBeds Int
+  floor         String?
+  description   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  department    Department @relation(fields: [departmentId], references: [id])
+  beds          Bed[]
+
+  @@map("wards")
+}
+
+model Bed {
+  id            String   @id @default(cuid())
+  bedNumber     String   @unique
+  wardId        String
+  isOccupied    Boolean  @default(false)
+  bedType       String?  // ICU, General, Private, etc.
+  dailyRate     Float?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  ward          Ward           @relation(fields: [wardId], references: [id])
+  admissions    Admission[]
+  fromTransfers BedTransfer[]  @relation("FromBedTransfer")
+  toTransfers   BedTransfer[]  @relation("ToBedTransfer")
+
+  @@map("beds")
+}
+
+model Admission {
+  id                    String          @id @default(cuid())
+  admissionId           String          @unique
+  patientId             String
+  doctorId              String
+  bedId                 String
+  admissionDate         DateTime        @default(now())
+  admissionTime         String
+  admissionType         AdmissionType
+  category              String?         // Emergency, Planned, etc.
+  referralSource        String?
+  referredBy            String?
+  
+  // Clinical details
+  chiefComplaint        String
+  presentIllness        String?
+  pastHistory           String?
+  familyHistory         String?
+  personalHistory       String?
+  
+  // Admission assessment
+  generalCondition      String?
+  consciousness         String?
+  provisionalDiagnosis  String
+  finalDiagnosis        String?
+  treatmentPlan         String?
+  
+  // Status and discharge
+  status                AdmissionStatus @default(STABLE)
+  expectedDischargeDate DateTime?
+  actualDischargeDate   DateTime?
+  dischargeType         String?
+  
+  // Financial
+  estimatedCost         Float?
+  depositAmount         Float?
+  
+  // Additional fields
+  notes                 String?
+  emergencyContact      String?
+  insuranceDetails      String?
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  // Relations
+  patient               Patient         @relation(fields: [patientId], references: [id])
+  doctor                Doctor          @relation(fields: [doctorId], references: [id])
+  bed                   Bed             @relation(fields: [bedId], references: [id])
+  
+  // Child relations
+  vitals                IPDVitals[]
+  treatments            Treatment[]
+  transfers             BedTransfer[]
+  discharge             Discharge?
+
+  @@map("admissions")
+}
+
+model IPDVitals {
+  id                String   @id @default(cuid())
+  admissionId       String
+  bloodPressure     String?
+  heartRate         Int?
+  temperature       Float?
+  respiratoryRate   Int?
+  oxygenSaturation  Int?
+  weight            Float?
+  height            Float?
+  bmi               Float?
+  urinOutput        Float?
+  fluidIntake       Float?
+  painScale         Int?     // 1-10 scale
+  recordedAt        DateTime @default(now())
+  recordedBy        String
+  shift             String?  // Morning, Evening, Night
+  notes             String?
+  
+  // Relations
+  admission         Admission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+
+  @@map("ipd_vitals")
+}
+
+model Treatment {
+  id            String          @id @default(cuid())
+  admissionId   String
+  doctorId      String
+  type          TreatmentType
+  description   String
+  medication    String?
+  dosage        String?
+  frequency     String?
+  route         String?
+  startDate     DateTime        @default(now())
+  endDate       DateTime?
+  status        TreatmentStatus @default(ACTIVE)
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relations
+  admission     Admission       @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  doctor        Doctor          @relation(fields: [doctorId], references: [id])
+
+  @@map("treatments")
+}
+
+model BedTransfer {
+  id            String   @id @default(cuid())
+  admissionId   String
+  fromBedId     String
+  toBedId       String
+  transferDate  DateTime @default(now())
+  transferTime  String
+  reason        String
+  approvedBy    String
+  notes         String?
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  admission     Admission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  fromBed       Bed       @relation("FromBedTransfer", fields: [fromBedId], references: [id])
+  toBed         Bed       @relation("ToBedTransfer", fields: [toBedId], references: [id])
+
+  @@map("bed_transfers")
+}
+
+model Discharge {
+  id                     String             @id @default(cuid())
+  admissionId            String             @unique
+  doctorId               String
+  dischargeDate          DateTime           @default(now())
+  dischargeTime          String
+  dischargeType          String             // Normal, LAMA, Death, etc.
+  finalDiagnosis         String
+  treatmentSummary       String?
+  conditionAtDischarge   String?
+  followUpInstructions   String?
+  followUpDate           DateTime?
+  restrictions           String?
+  notes                  String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  
+  // Relations
+  admission              Admission          @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  doctor                 Doctor             @relation(fields: [doctorId], references: [id])
+  medications            DischargeMedication[]
+
+  @@map("discharges")
+}
+
+model DischargeMedication {
+  id           String    @id @default(cuid())
+  dischargeId  String
+  medicineName String
+  dosage       String
+  frequency    String
+  duration     String
+  instructions String?
+  createdAt    DateTime  @default(now())
+  
+  // Relations
+  discharge    Discharge @relation(fields: [dischargeId], references: [id], onDelete: Cascade)
+
+  @@map("discharge_medications")
+}
+
+// ========================================
+// Enhanced Enums for OPD & IPD
+// ========================================
+
+enum VisitType {
+  OPD
+  EMERGENCY
+  REVIEW
+}
+
+enum AppointmentMode {
+  WALK_IN
+  ONLINE
+  PHONE
+}
+
+enum ReferralSource {
+  SELF
+  DOCTOR
+  HOSPITAL
+  CLINIC
+  OTHER
+}
+
+enum VisitPriority {
+  NORMAL
+  URGENT
+  EMERGENCY
+}
+
+enum VisitStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MedicineRoute {
+  ORAL
+  IV
+  IM
+  SUBCUTANEOUS
+  TOPICAL
+  INHALATION
+  OTHER
+}
+
+enum InvestigationUrgency {
+  ROUTINE
+  URGENT
+  STAT
+}
+
+enum InvestigationType {
+  LAB
+  RADIOLOGY
+  OTHER
+}
+
+enum InvestigationStatus {
+  ORDERED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum WardType {
+  GENERAL
+  ICU
+  NICU
+  CCU
+  EMERGENCY
+}
+
+enum AdmissionStatus {
+  STABLE
+  CRITICAL
+  RECOVERY
+  DISCHARGED
+}
+
+enum AdmissionType {
+  EMERGENCY
+  ELECTIVE
+  REFERRAL
+}
+
+enum TreatmentType {
+  MEDICATION
+  PROCEDURE
+  THERAPY
+  INVESTIGATION
+}
+
+enum TreatmentStatus {
+  ACTIVE
+  COMPLETED
+  DISCONTINUED
 }

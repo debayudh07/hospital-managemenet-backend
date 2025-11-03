@@ -83,6 +83,16 @@ export class DoctorsService {
       },
     });
 
+    // Create doctor-department relationship in junction table if department is assigned
+    if (departmentId) {
+      await this.prisma.doctorDepartment.create({
+        data: {
+          doctorId: doctor.id,
+          departmentId: departmentId,
+        },
+      });
+    }
+
     return this.mapToResponseDto(doctor);
   }
 

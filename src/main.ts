@@ -1,7 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,6 +23,13 @@ async function bootstrap() {
     }),
   );
 
+  // Global logging interceptor and exception filter
+  const loggingInterceptor = app.get(LoggingInterceptor);
+  const exceptionsFilter = app.get(AllExceptionsFilter);
+  
+  app.useGlobalInterceptors(loggingInterceptor);
+  app.useGlobalFilters(exceptionsFilter);
+
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Hospital Management API')
@@ -31,8 +40,14 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 5000);
-  console.log(`Application is running on: ${await app.getUrl()}`);
-  console.log(`Swagger documentation available at: ${await app.getUrl()}/api`);
+  const logger = new Logger('Bootstrap');
+  const port = process.env.PORT ?? 5000;
+  
+  await app.listen(port);
+  
+  logger.log(`🚀 Application is running on: ${await app.getUrl()}`);
+  logger.log(`📚 Swagger documentation available at: ${await app.getUrl()}/api`);
+  logger.log(`📊 API logging and metrics are enabled`);
+  logger.log(`🔍 Monitor logs for API calls and performance metrics`);
 }
 bootstrap();

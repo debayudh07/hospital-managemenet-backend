@@ -141,6 +141,60 @@ export class AppointmentsController {
     return this.appointmentsService.findByPatient(patientId);
   }
 
+  @Get('opd-visits')
+  @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST')
+  @ApiOperation({ summary: 'Get OPD visits formatted as appointments' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'doctorId',
+    required: false,
+    type: String,
+    description: 'Filter by doctor ID',
+  })
+  @ApiQuery({
+    name: 'patientId',
+    required: false,
+    type: String,
+    description: 'Filter by patient ID',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    type: String,
+    description: 'Filter by date (YYYY-MM-DD)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OPD visits retrieved as appointments successfully',
+    type: [AppointmentResponseDto],
+  })
+  async getOPDVisitsAsAppointments(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('doctorId') doctorId?: string,
+    @Query('patientId') patientId?: string,
+    @Query('date') date?: string,
+  ) {
+    return this.appointmentsService.getOPDVisitsAsAppointments(
+      page,
+      limit,
+      doctorId,
+      patientId,
+      date,
+    );
+  }
+
   @Get(':id')
   @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT')
   @ApiOperation({ summary: 'Get appointment by ID' })
@@ -195,5 +249,60 @@ export class AppointmentsController {
     @Body('status') status: AppointmentStatus,
   ): Promise<AppointmentResponseDto> {
     return this.appointmentsService.update(id, { status });
+  }
+
+  @Get('doctor/:doctorId/available-slots')
+  @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT')
+  @ApiOperation({ summary: 'Get available time slots for a doctor on a specific date' })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    type: String,
+    description: 'Date to check availability (YYYY-MM-DD)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Available slots retrieved successfully',
+  })
+  async getAvailableSlots(
+    @Param('doctorId') doctorId: string,
+    @Query('date') date: string,
+  ) {
+    return this.appointmentsService.getAvailableSlots(doctorId, date);
+  }
+
+  @Get('department/:departmentId/doctors')
+  @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT')
+  @ApiOperation({ summary: 'Get doctors by department with their appointment counts' })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    type: String,
+    description: 'Date to check appointment counts (YYYY-MM-DD)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Department doctors retrieved successfully',
+  })
+  async getDoctorsByDepartment(
+    @Param('departmentId') departmentId: string,
+    @Query('date') date?: string,
+  ) {
+    return this.appointmentsService.getDoctorsByDepartment(departmentId, date);
+  }
+
+  @Post('book-with-opd')
+  @Roles('ADMIN', 'DOCTOR', 'RECEPTIONIST')
+  @ApiOperation({ summary: 'Create appointment during OPD visit creation' })
+  @ApiResponse({
+    status: 201,
+    description: 'Appointment created with OPD visit successfully',
+    type: AppointmentResponseDto,
+  })
+  async createWithOPD(
+    @Body() createAppointmentDto: CreateAppointmentDto,
+    @Request() req: any,
+  ): Promise<AppointmentResponseDto> {
+    return this.appointmentsService.createWithOPD(createAppointmentDto, req.user.sub);
   }
 }

@@ -60,4 +60,15 @@ export class AppointmentResponseDto {
 
   @ApiPropertyOptional({ description: 'Doctor consultation fee' })
   consultationFee?: number;
+
+  // Department information
+  @ApiPropertyOptional({ description: 'Department ID' })
+  departmentId?: string;
+
+  @ApiPropertyOptional({ description: 'Department information' })
+  department?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
 }
