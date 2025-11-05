@@ -100,6 +100,7 @@ model Patient {
   // OPD & IPD Relations
   opdVisits      OPDVisit[]
   admissions     Admission[]
+  documents      Document[]
 
   @@map("patients")
 }
@@ -1084,4 +1085,34 @@ enum TreatmentStatus {
   ACTIVE
   COMPLETED
   DISCONTINUED
+}
+
+enum DocumentCategory {
+  ADMISSION
+  DISCHARGE
+  MEDICAL
+  INSURANCE
+  IDENTIFICATION
+  OTHER
+}
+
+// Document Management Models
+model Document {
+  id            String           @id @default(cuid())
+  patientId     String
+  documentName  String
+  filePath      String
+  category      DocumentCategory @default(OTHER)
+  fileSize      Int?
+  mimeType      String?
+  notes         String?
+  uploadedBy    String?
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Relations
+  patient       Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
 }
