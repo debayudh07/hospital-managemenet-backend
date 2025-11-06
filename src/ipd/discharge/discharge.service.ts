@@ -111,8 +111,18 @@ export class DischargeService {
         data: { availableBeds: { increment: 1 } },
       });
 
+      // Fetch medications for the complete record
+      const medications = createDischargeDto.medications && createDischargeDto.medications.length > 0
+        ? await prisma.dischargeMedication.findMany({
+            where: { dischargeId: discharge.id }
+          })
+        : [];
+
       // Return complete discharge record with medications
-      return this.findOne(discharge.id);
+      return {
+        ...discharge,
+        medications
+      };
     });
   }
 
@@ -152,6 +162,7 @@ export class DischargeService {
           admission: {
             include: {
               patient: true,
+              doctor: true,
               bed: { include: { ward: true } },
             },
           },

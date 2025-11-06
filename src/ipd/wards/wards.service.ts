@@ -113,8 +113,11 @@ export class WardsService {
           select: {
             id: true,
             bedNumber: true,
+            wardId: true,
             isOccupied: true,
             bedType: true,
+            dailyRate: true,
+            isActive: true,
           },
         },
       },

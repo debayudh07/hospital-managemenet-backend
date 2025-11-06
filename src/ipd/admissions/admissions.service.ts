@@ -176,7 +176,14 @@ export class AdmissionsService {
     }
 
     if (filters?.status) {
-      where.status = filters.status;
+      if (filters.status === 'ACTIVE' as any) {
+        // For "ACTIVE" filter, exclude discharged patients
+        where.status = {
+          not: 'DISCHARGED'
+        };
+      } else {
+        where.status = filters.status;
+      }
     }
 
     if (filters?.admissionDate) {
@@ -194,7 +201,11 @@ export class AdmissionsService {
       where,
       include: {
         patient: true,
-        doctor: true,
+        doctor: {
+          include: {
+            primaryDepartment: true
+          }
+        },
         bed: {
           include: {
             ward: true
