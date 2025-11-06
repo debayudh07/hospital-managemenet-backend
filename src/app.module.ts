@@ -18,6 +18,7 @@ import { BillingModule } from './billing/billing.module';
 import { ReportsModule } from './reports/reports.module';
 import { FilesModule } from './files/files.module';
 import { SearchModule } from './search/search.module';
+import { LabModule } from './lab/lab.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { SearchModule } from './search/search.module';
     ReportsModule,
     FilesModule,
     SearchModule,
+    LabModule,
   ],
   controllers: [AppController],
   providers: [AppService],

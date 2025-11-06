@@ -27,13 +27,19 @@ model User {
   updatedAt   DateTime  @updatedAt
 
   // Relations
-  doctorProfile  Doctor?
-  patientProfile Patient?
-  staffProfile   Staff?
-  appointments   Appointment[]
-  labOrders      LabOrder[]
-  invoices       Invoice[]
-  auditLogs      AuditLog[]
+  doctorProfile      Doctor?
+  patientProfile     Patient?
+  staffProfile       Staff?
+  appointments       Appointment[]
+  collectedOrders    LabOrder[]       @relation("CollectedOrders")
+  processedOrders    LabOrder[]       @relation("ProcessedOrders")
+  reviewedOrders     LabOrder[]       @relation("ReviewedOrders")
+  technicianResults  LabResult[]      @relation("TechnicianResults")
+  verifiedResults    LabResult[]      @relation("VerifiedResults")
+  labWorkflows       LabWorkflow[]
+  headOfDepartments  LabDepartment[]  @relation("DepartmentHead")
+  invoices           Invoice[]
+  auditLogs          AuditLog[]
 
   @@map("users")
 }
@@ -210,6 +216,9 @@ model Doctor {
   treatments     Treatment[]
   discharges     Discharge[]
 
+  // Lab Relations
+  labOrders      LabOrder[]
+
   @@map("doctors")
 }
 
@@ -374,44 +383,67 @@ enum PaymentStatus {
 
 // Laboratory Models
 model LabTest {
-  id          String   @id @default(cuid())
-  name        String
-  code        String   @unique
-  category    String
-  price       Float
-  normalRange String?
-  unit        String?
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  category     String
+  department   String   // Hematology, Biochemistry, etc.
+  price        Float
+  normalRange  String?
+  unit         String?
+  description  String?
+  duration     String?  // "2-4 hours", "1-2 days"
+  methodology  String?  // Test methodology
+  sampleType   String?  // Blood, Urine, Stool, etc.
+  sampleVolume String?  // Required sample volume
+  fasting      Boolean  @default(false) // Fasting required
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  orders  LabOrder[]
-  results LabResult[]
+  departmentRef LabDepartment? @relation(fields: [department], references: [code])
+  orders        LabOrder[]
+  results       LabResult[]
+  templates     LabTemplate[]
 
   @@map("lab_tests")
 }
 
 model LabOrder {
-  id          String         @id @default(cuid())
-  orderId     String         @unique
-  patientId   String
-  doctorId    String
-  testIds     String // JSON array of test IDs
-  status      LabOrderStatus @default(PENDING)
-  priority    Priority       @default(NORMAL)
-  notes       String?
-  orderedAt   DateTime       @default(now())
-  completedAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id               String         @id @default(cuid())
+  orderId          String         @unique
+  patientId        String
+  doctorId         String
+  testIds          String         // JSON array of test IDs
+  status           LabOrderStatus @default(PENDING)
+  priority         Priority       @default(NORMAL)
+  notes            String?
+  clinicalNotes    String?        // Clinical observations and requirements
+  requestedBy      String?        // Name of the requesting doctor/staff
+  orderedAt        DateTime       @default(now())
+  collectedAt      DateTime?
+  processingAt     DateTime?
+  completedAt      DateTime?
+  totalCost        Float?
+  collectedBy      String?        // Staff who collected sample
+  processedBy      String?        // Lab technician assigned
+  reviewedBy       String?        // Doctor who reviewed
+  sampleCondition  String?        // Sample quality notes
+  reportGenerated  Boolean        @default(false)
+  reportContent    String?        // Final report text
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   // Relations
-  patient Patient     @relation(fields: [patientId], references: [id])
-  doctor  User        @relation(fields: [doctorId], references: [id])
-  tests   LabTest[]
-  results LabResult[]
+  patient   Patient       @relation(fields: [patientId], references: [id])
+  doctor    Doctor        @relation(fields: [doctorId], references: [id])
+  collector User?         @relation("CollectedOrders", fields: [collectedBy], references: [id])
+  processor User?         @relation("ProcessedOrders", fields: [processedBy], references: [id])
+  reviewer  User?         @relation("ReviewedOrders", fields: [reviewedBy], references: [id])
+  tests     LabTest[]
+  results   LabResult[]
+  workflows LabWorkflow[]
 
   @@map("lab_orders")
 }
@@ -431,24 +463,83 @@ enum Priority {
 }
 
 model LabResult {
+  id             String    @id @default(cuid())
+  orderId        String
+  testId         String
+  value          String
+  unit           String?
+  normalRange    String?
+  status         String    // NORMAL, ABNORMAL, CRITICAL
+  notes          String?
+  technician     String    // Lab technician who performed test
+  verifiedBy     String?   // Doctor who verified result
+  verifiedAt     DateTime?
+  interpretation String?   // Clinical interpretation
+  flagged        Boolean   @default(false) // Critical result flag
+  method         String?   // Testing method used
+  instrument     String?   // Instrument/analyzer used
+  testedAt       DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  order          LabOrder @relation(fields: [orderId], references: [id])
+  test           LabTest  @relation(fields: [testId], references: [id])
+  technicianUser User     @relation("TechnicianResults", fields: [technician], references: [id])
+  verifier       User?    @relation("VerifiedResults", fields: [verifiedBy], references: [id])
+
+  @@map("lab_results")
+}
+
+// Lab Department Model
+model LabDepartment {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  code           String   @unique
+  description    String?
+  headTechnician String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  head  User?     @relation("DepartmentHead", fields: [headTechnician], references: [id])
+  tests LabTest[]
+
+  @@map("lab_departments")
+}
+
+// Lab Template Model (for common test panels)
+model LabTemplate {
   id          String   @id @default(cuid())
-  orderId     String
-  testId      String
-  value       String
-  unit        String?
-  normalRange String?
-  status      String // NORMAL, ABNORMAL, CRITICAL
-  notes       String?
-  testedAt    DateTime @default(now())
-  reviewedBy  String?
+  name        String
+  description String?
+  testIds     String   // JSON array of test IDs
+  totalCost   Float
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  order LabOrder @relation(fields: [orderId], references: [id])
-  test  LabTest  @relation(fields: [testId], references: [id])
+  tests LabTest[]
 
-  @@map("lab_results")
+  @@map("lab_templates")
+}
+
+// Lab Workflow Model (for audit trail)
+model LabWorkflow {
+  id        String   @id @default(cuid())
+  orderId   String
+  status    String
+  changedBy String
+  changedAt DateTime @default(now())
+  notes     String?
+
+  // Relations
+  order LabOrder @relation(fields: [orderId], references: [id])
+  user  User     @relation(fields: [changedBy], references: [id])
+
+  @@map("lab_workflows")
 }
 
 // Pharmacy Models
