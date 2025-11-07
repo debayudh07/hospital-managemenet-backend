@@ -73,15 +73,6 @@ export class VisitsService {
     const visitCount = await this.prisma.oPDVisit.count();
     const visitId = `OPD${String(visitCount + 1).padStart(6, '0')}`;
 
-    // Calculate billing total
-    const consultationFee = createOPDVisitDto.billing.consultationFee;
-    const additionalCharges = createOPDVisitDto.billing.additionalCharges || 0;
-    const discount = createOPDVisitDto.billing.discount || 0;
-    const tax = createOPDVisitDto.billing.tax || 0;
-    const totalAmount = consultationFee + additionalCharges + tax - discount;
-    const paidAmount = createOPDVisitDto.billing.paidAmount || 0;
-    const balanceAmount = totalAmount - paidAmount;
-
     // Create OPD visit (appointments will be handled via the /appointments/opd-visits endpoint)
     const visitDate = createOPDVisitDto.visitDate ? new Date(createOPDVisitDto.visitDate) : new Date();
     const visitTime = createOPDVisitDto.visitTime || new Date().toTimeString().slice(0, 5);
@@ -142,24 +133,6 @@ export class VisitsService {
             orderedBy: doctor.id,
           }))
         } : undefined,
-
-        // Create billing
-        billing: {
-          create: {
-            consultationFee,
-            additionalCharges,
-            discount,
-            tax,
-            totalAmount,
-            paymentStatus: paidAmount >= totalAmount ? PaymentStatus.COMPLETED : PaymentStatus.PENDING,
-            paymentMethod: createOPDVisitDto.billing.paymentMethod,
-            paidAmount,
-            balanceAmount,
-            transactionId: createOPDVisitDto.billing.transactionId,
-            paymentDate: paidAmount > 0 ? new Date() : null,
-            notes: createOPDVisitDto.billing.notes,
-          }
-        }
       },
       include: {
         patient: true,

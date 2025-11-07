@@ -14,7 +14,7 @@ import { OpdModule } from './opd/opd.module';
 import { IpdModule } from './ipd/ipd.module';
 import { WardsModule } from './ipd/wards/wards.module';
 import { VitalsModule } from './vitals/vitals.module';
-import { BillingModule } from './billing/billing.module';
+
 import { ReportsModule } from './reports/reports.module';
 import { FilesModule } from './files/files.module';
 import { SearchModule } from './search/search.module';
@@ -35,7 +35,6 @@ import { LabModule } from './lab/lab.module';
     IpdModule,
     WardsModule,
     VitalsModule,
-    BillingModule,
     ReportsModule,
     FilesModule,
     SearchModule,

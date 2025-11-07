@@ -275,4 +275,55 @@ export class BillingService {
       }
     });
   }
+
+  async findAll(filters: {
+    status?: string;
+    departmentId?: string;
+    doctorId?: string;
+    fromDate?: string;
+    toDate?: string;
+  }) {
+    const where: any = {};
+
+    if (filters.status && filters.status !== 'ALL') {
+      where.paymentStatus = filters.status as PaymentStatus;
+    }
+
+    if (filters.departmentId) {
+      where.opdVisit = {
+        ...where.opdVisit,
+        departmentId: filters.departmentId
+      };
+    }
+
+    if (filters.doctorId) {
+      where.opdVisit = {
+        ...where.opdVisit,
+        doctorId: filters.doctorId
+      };
+    }
+
+    if (filters.fromDate && filters.toDate) {
+      where.createdAt = {
+        gte: new Date(filters.fromDate),
+        lte: new Date(filters.toDate)
+      };
+    }
+
+    return this.prisma.oPDBilling.findMany({
+      where,
+      include: {
+        opdVisit: {
+          include: {
+            patient: true,
+            doctor: true,
+            department: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+  }
 }
