@@ -158,6 +158,7 @@ export class WardsService {
   async updateWard(id: string, updateWardDto: UpdateWardDto) {
     const existingWard = await this.prisma.ward.findUnique({
       where: { id },
+      include: { beds: true },
     });
 
     if (!existingWard) {
@@ -186,16 +187,90 @@ export class WardsService {
       }
     }
 
-    const updatedWard = await this.prisma.ward.update({
-      where: { id },
-      data: updateWardDto,
-      include: {
-        department: true,
-        beds: true,
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      // Update the ward first
+      const updatedWard = await tx.ward.update({
+        where: { id },
+        data: updateWardDto,
+      });
 
-    return updatedWard;
+      // Handle bed count changes if totalBeds is being updated
+      if (updateWardDto.totalBeds && updateWardDto.totalBeds !== existingWard.totalBeds) {
+        const currentBedCount = existingWard.beds.length;
+        
+        if (updateWardDto.totalBeds > currentBedCount) {
+          // Add new beds
+          const bedsToAdd = updateWardDto.totalBeds - currentBedCount;
+          const wardNumber = updateWardDto.wardNumber || existingWard.wardNumber;
+          
+          for (let i = currentBedCount + 1; i <= updateWardDto.totalBeds; i++) {
+            const bedNumber = `${wardNumber}-B${String(i).padStart(3, '0')}`;
+            
+            // Check if bed number already exists
+            const existingBed = await tx.bed.findUnique({
+              where: { bedNumber },
+            });
+
+            if (!existingBed) {
+              await tx.bed.create({
+                data: {
+                  bedNumber,
+                  wardId: id,
+                  isOccupied: false,
+                  bedType: updatedWard.type === 'ICU' ? 'ICU' : 'General',
+                  dailyRate: updatedWard.type === 'ICU' ? 5000 : 2000,
+                  isActive: true,
+                },
+              });
+            }
+          }
+          
+          // Update available beds count
+          await tx.ward.update({
+            where: { id },
+            data: { 
+              availableBeds: existingWard.availableBeds + bedsToAdd 
+            },
+          });
+        } else if (updateWardDto.totalBeds < currentBedCount) {
+          // Remove excess beds (only if they're not occupied)
+          const occupiedBeds = existingWard.beds.filter(bed => bed.isOccupied);
+          
+          if (occupiedBeds.length > updateWardDto.totalBeds) {
+            throw new BadRequestException('Cannot reduce bed count below number of occupied beds');
+          }
+          
+          // Remove unoccupied beds from the end
+          const bedsToRemove = currentBedCount - updateWardDto.totalBeds;
+          const unoccupiedBeds = existingWard.beds
+            .filter(bed => !bed.isOccupied)
+            .slice(-bedsToRemove);
+          
+          for (const bed of unoccupiedBeds) {
+            await tx.bed.delete({
+              where: { id: bed.id },
+            });
+          }
+          
+          // Update available beds count
+          await tx.ward.update({
+            where: { id },
+            data: { 
+              availableBeds: Math.max(0, existingWard.availableBeds - bedsToRemove)
+            },
+          });
+        }
+      }
+
+      // Return updated ward with all relations
+      return await tx.ward.findUnique({
+        where: { id },
+        include: {
+          department: true,
+          beds: true,
+        },
+      });
+    });
   }
 
   async removeWard(id: string) {
