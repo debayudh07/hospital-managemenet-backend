@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentResponseDto } from './dto/appointment-response.dto';
-import { AppointmentStatus, VisitStatus } from '@prisma/client';
+import { AppointmentStatus } from '@prisma/client';
 
 @Injectable()
 export class AppointmentsService {
@@ -232,7 +232,6 @@ export class AppointmentsService {
   }
 
   async findOne(id: string): Promise<AppointmentResponseDto> {
-    // First try to find as a regular appointment
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -248,129 +247,80 @@ export class AppointmentsService {
       },
     });
 
-    if (appointment) {
-      return await this.mapToResponseDto(appointment);
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
     }
 
-    // If not found as appointment, try to find as OPD visit
-    const opdVisit = await this.prisma.oPDVisit.findUnique({
-      where: { id },
-      include: {
-        patient: true,
-        doctor: true,
-      },
-    });
-
-    if (opdVisit) {
-      return this.mapOPDVisitToAppointmentResponse(opdVisit);
-    }
-
-    throw new NotFoundException('Appointment not found');
+    return await this.mapToResponseDto(appointment);
   }
 
   async update(
     id: string,
     updateAppointmentDto: UpdateAppointmentDto,
   ): Promise<AppointmentResponseDto> {
-    // First try to update as a regular appointment
     const existingAppointment = await this.prisma.appointment.findUnique({
       where: { id },
     });
 
-    if (existingAppointment) {
-      // Handle regular appointment update
-      // If updating date/time, check for conflicts
-      if (
-        updateAppointmentDto.date ||
-        updateAppointmentDto.startTime ||
-        updateAppointmentDto.doctorId
-      ) {
-        const appointmentDate = updateAppointmentDto.date
-          ? new Date(updateAppointmentDto.date)
-          : existingAppointment.date;
-        const startTime =
-          updateAppointmentDto.startTime || existingAppointment.startTime;
-        const doctorId =
-          updateAppointmentDto.doctorId || existingAppointment.doctorId;
+    if (!existingAppointment) {
+      throw new NotFoundException('Appointment not found');
+    }
 
-        const conflictingAppointment = await this.prisma.appointment.findFirst({
-          where: {
-            id: { not: id },
-            doctorId,
-            date: appointmentDate,
-            startTime,
-            status: {
-              not: AppointmentStatus.CANCELLED,
-            },
-          },
-        });
+    // If updating date/time, check for conflicts
+    if (
+      updateAppointmentDto.date ||
+      updateAppointmentDto.startTime ||
+      updateAppointmentDto.doctorId
+    ) {
+      const appointmentDate = updateAppointmentDto.date
+        ? new Date(updateAppointmentDto.date)
+        : existingAppointment.date;
+      const startTime =
+        updateAppointmentDto.startTime || existingAppointment.startTime;
+      const doctorId =
+        updateAppointmentDto.doctorId || existingAppointment.doctorId;
 
-        if (conflictingAppointment) {
-          throw new ConflictException(
-            'Doctor already has an appointment at this time',
-          );
-        }
-      }
-
-      const updateData: any = { ...updateAppointmentDto };
-      if (updateAppointmentDto.date) {
-        updateData.date = new Date(updateAppointmentDto.date);
-      }
-
-      const appointment = await this.prisma.appointment.update({
-        where: { id },
-        data: updateData,
-        include: {
-          patient: {
-            include: { user: true },
-          },
-          doctor: {
-            include: { 
-              user: true,
-              primaryDepartment: true,
-            },
+      const conflictingAppointment = await this.prisma.appointment.findFirst({
+        where: {
+          id: { not: id },
+          doctorId,
+          date: appointmentDate,
+          startTime,
+          status: {
+            not: AppointmentStatus.CANCELLED,
           },
         },
       });
 
-      return await this.mapToResponseDto(appointment);
+      if (conflictingAppointment) {
+        throw new ConflictException(
+          'Doctor already has an appointment at this time',
+        );
+      }
     }
 
-    // If not found as appointment, try to find and update as OPD visit
-    const existingOPDVisit = await this.prisma.oPDVisit.findUnique({
+    const updateData: any = { ...updateAppointmentDto };
+    if (updateAppointmentDto.date) {
+      updateData.date = new Date(updateAppointmentDto.date);
+    }
+
+    const appointment = await this.prisma.appointment.update({
       where: { id },
+      data: updateData,
+      include: {
+        patient: {
+          include: { user: true },
+        },
+        doctor: {
+          include: { 
+            user: true,
+            primaryDepartment: true,
+          },
+        },
+      },
     });
 
-    if (existingOPDVisit) {
-      // Handle OPD visit status update
-      if (updateAppointmentDto.status) {
-        // Map appointment status to OPD visit status
-        const opdStatusMap: Record<string, VisitStatus> = {
-          'SCHEDULED': VisitStatus.PENDING,
-          'IN_PROGRESS': VisitStatus.IN_PROGRESS,
-          'COMPLETED': VisitStatus.COMPLETED,
-          'CANCELLED': VisitStatus.CANCELLED,
-        };
-        
-        const opdStatus = opdStatusMap[updateAppointmentDto.status] || VisitStatus.PENDING;
-        
-        const updatedOPDVisit = await this.prisma.oPDVisit.update({
-          where: { id },
-          data: { status: opdStatus },
-          include: {
-            patient: true,
-            doctor: true,
-          },
-        });
-
-        return this.mapOPDVisitToAppointmentResponse(updatedOPDVisit);
-      }
-      
-      // For other updates, we might need to implement them based on requirements
-      throw new BadRequestException('Only status updates are supported for OPD visits');
-    }
-
-    throw new NotFoundException('Appointment not found');
+    return await this.mapToResponseDto(appointment);
   }
 
   async remove(id: string): Promise<void> {
