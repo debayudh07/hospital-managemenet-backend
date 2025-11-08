@@ -9,11 +9,13 @@ import { TransfersModule } from './transfers/transfers.module';
 import { DischargeModule } from './discharge/discharge.module';
 import { DocumentsModule } from './documents/documents.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { IPDBillingModule } from './billing/billing.module';
+import { InsuranceModule } from './insurance/insurance.module';
 
 @Module({
   providers: [IpdService, PrismaService],
   controllers: [IpdController],
-  imports: [AdmissionsModule, WardsModule, VitalsModule, TreatmentsModule, TransfersModule, DischargeModule, DocumentsModule],
+  imports: [AdmissionsModule, WardsModule, VitalsModule, TreatmentsModule, TransfersModule, DischargeModule, DocumentsModule, IPDBillingModule, InsuranceModule],
   exports: [IpdService]
 })
 export class IpdModule {}

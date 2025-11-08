@@ -964,8 +964,143 @@ model Admission {
   treatments            Treatment[]
   transfers             BedTransfer[]
   discharge             Discharge?
+  billing               IPDBilling?
+  insuranceClaims       InsuranceClaim[]
 
   @@map("admissions")
+}
+
+model IPDBilling {
+  id                        String        @id @default(cuid())
+  admissionId               String        @unique
+  billNumber                String        @unique
+  
+  // Room and bed charges
+  bedCharges                Float         @default(0)
+  roomCharges               Float         @default(0)
+  icuCharges                Float         @default(0)
+  nursingCharges            Float         @default(0)
+  
+  // Medical charges
+  doctorFees                Float         @default(0)
+  consultationFees          Float         @default(0)
+  procedureFees             Float         @default(0)
+  surgeryFees               Float         @default(0)
+  
+  // Investigation and lab charges
+  labCharges                Float         @default(0)
+  radiologyCharges          Float         @default(0)
+  pathologyCharges          Float         @default(0)
+  
+  // Medication charges
+  medicineCharges           Float         @default(0)
+  injectionCharges          Float         @default(0)
+  
+  // Other charges
+  equipmentCharges          Float         @default(0)
+  miscellaneousCharges      Float         @default(0)
+  ambulanceCharges          Float         @default(0)
+  
+  // Totals and discounts
+  subtotal                  Float         @default(0)
+  discount                  Float         @default(0)
+  tax                       Float         @default(0)
+  totalAmount               Float         @default(0)
+  
+  // Payment details
+  paymentStatus             PaymentStatus @default(PENDING)
+  paymentMethod             PaymentMethod?
+  paidAmount                Float         @default(0)
+  balanceAmount             Float         @default(0)
+  
+  // Insurance details
+  insuranceClaimed          Float         @default(0)
+  insuranceApproved         Float         @default(0)
+  insurancePending          Float         @default(0)
+  
+  // Additional details
+  depositAmount             Float         @default(0)
+  refundAmount              Float         @default(0)
+  transactionId             String?
+  paymentDate               DateTime?
+  notes                     String?
+  
+  // Daily charge tracking
+  lastChargeDate            DateTime?
+  dayCount                  Int           @default(0)
+  
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  
+  // Relations
+  admission                 Admission     @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  
+  // Insurance Claims relation
+  insuranceClaims           InsuranceClaim[]
+
+  @@map("ipd_billing")
+}
+
+model InsuranceClaim {
+  id                        String        @id @default(cuid())
+  claimNumber               String        @unique
+  admissionId               String
+  billingId                 String
+  
+  // Policy details
+  policyNumber              String
+  insuranceProvider         String
+  tpaName                   String?
+  
+  // Claim details
+  claimType                 String        // CASHLESS, REIMBURSEMENT
+  claimedAmount             Float
+  approvedAmount            Float         @default(0)
+  rejectedAmount            Float         @default(0)
+  status                    String        @default("PENDING") // PENDING, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, PARTIALLY_APPROVED
+  
+  // Medical details
+  diagnosisCode             String?
+  treatmentCode             String?
+  
+  // Pre-authorization details
+  preAuthNumber             String?
+  preAuthDate               DateTime?
+  preAuthAmount             Float?
+  preAuthStatus             String?       // PENDING, APPROVED, REJECTED, EXPIRED
+  
+  // Review details
+  reviewedDate              DateTime?
+  reviewedBy                String?
+  rejectionReason           String?
+  reviewRemarks             String?
+  
+  // TPA details
+  tpaReferenceNumber        String?
+  
+  // Settlement details
+  settlementNumber          String?
+  settlementDate            DateTime?
+  settlementAmount          Float?
+  
+  // Additional details
+  remarks                   String?
+  attachments               String?       // JSON array of file paths
+  isEmergency               Boolean       @default(false)
+  contactPerson             String?
+  contactPhone              String?
+  urgency                   String?
+  validityPeriod            String?
+  conditions                String?
+  
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  
+  // Relations
+  admission                 Admission     @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  billing                   IPDBilling    @relation(fields: [billingId], references: [id], onDelete: Cascade)
+
+  @@map("insurance_claims")
 }
 
 model IPDVitals {
