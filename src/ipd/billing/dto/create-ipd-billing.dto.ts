@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+} from 'class-validator';
 import { PaymentMethod } from '@prisma/client';
 
 export class CreateIPDBillingDto {
@@ -68,6 +74,14 @@ export class CreateIPDBillingDto {
   @IsOptional()
   @IsNumber()
   ambulanceCharges?: number;
+
+  @IsOptional()
+  @IsNumber()
+  additionalCharges?: number;
+
+  @IsOptional()
+  @IsString()
+  additionalChargesList?: string;
 
   @IsOptional()
   @IsNumber()

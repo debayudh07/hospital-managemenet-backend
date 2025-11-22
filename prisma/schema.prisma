@@ -1000,6 +1000,8 @@ model IPDBilling {
   equipmentCharges          Float         @default(0)
   miscellaneousCharges      Float         @default(0)
   ambulanceCharges          Float         @default(0)
+  additionalCharges         Float         @default(0)
+  additionalChargesList     String?
   
   // Totals and discounts
   subtotal                  Float         @default(0)

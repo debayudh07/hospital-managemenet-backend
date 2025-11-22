@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentStatus, PaymentMethod } from '@prisma/client';
@@ -76,15 +77,18 @@ export class IPDBillingService {
         discount: createIPDBillingDto.discount || 0,
         tax: createIPDBillingDto.tax || 0,
         totalAmount,
-        paymentStatus: createIPDBillingDto.paidAmount && createIPDBillingDto.paidAmount >= totalAmount 
-          ? PaymentStatus.COMPLETED 
-          : PaymentStatus.PENDING,
+        paymentStatus:
+          createIPDBillingDto.paidAmount &&
+          createIPDBillingDto.paidAmount >= totalAmount
+            ? PaymentStatus.COMPLETED
+            : PaymentStatus.PENDING,
         paymentMethod: createIPDBillingDto.paymentMethod,
         paidAmount: createIPDBillingDto.paidAmount || 0,
         balanceAmount,
         depositAmount: createIPDBillingDto.depositAmount || 0,
         insuranceClaimed: createIPDBillingDto.insuranceClaimed || 0,
         transactionId: createIPDBillingDto.transactionId,
+        // eslint-disable-next-line prettier/prettier
         paymentDate: createIPDBillingDto.paymentDate ? new Date(createIPDBillingDto.paymentDate) : null,
         notes: createIPDBillingDto.notes,
         dayCount,
